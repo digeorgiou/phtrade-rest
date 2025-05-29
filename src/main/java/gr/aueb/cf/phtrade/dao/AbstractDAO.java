@@ -119,6 +119,7 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
 
         List<Predicate> predicates = getPredicatesList(builder, entityRoot, criteria);
         selectQuery.select(entityRoot).where(predicates.toArray(new Predicate[0]));
+
         TypedQuery<T> query = em.createQuery(selectQuery);
         addParametersToQuery(query, criteria);
 
@@ -147,23 +148,76 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
         return query.getResultList();
     }
 
+
+
     public EntityManager getEntityManager() {
         return JPAHelper.getEntityManager();
     }
 
+//    @SuppressWarnings("unchecked")
+//    protected List<Predicate> getPredicatesList(CriteriaBuilder builder, Root<T> entityRoot, Map<String , Object> criteria) {
+//        List<Predicate> predicates = new ArrayList<>();
+//
+//        for (Map.Entry<String, Object> entry : criteria.entrySet()) {
+//            String key = entry.getKey();
+//            Object value = entry.getValue();
+//
+//            ParameterExpression<?> val = builder.parameter(value.getClass(), buildParameterAlias(key));
+////            Predicate equal = builder.equal(resolvePath(entityRoot, key), val);
+//            Predicate predicateLike = builder.like((Expression<String>) resolvePath(entityRoot, key), (Expression<String>) val);
+////            predicates.add(equal);
+//            predicates.add(predicateLike);
+//        }
+//        return predicates;
+//    }
+
     @SuppressWarnings("unchecked")
-    protected List<Predicate> getPredicatesList(CriteriaBuilder builder, Root<T> entityRoot, Map<String , Object> criteria) {
+    protected List<Predicate> getPredicatesList(CriteriaBuilder builder, Root<T> entityRoot, Map<String, Object> criteria) {
         List<Predicate> predicates = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : criteria.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
 
-            ParameterExpression<?> val = builder.parameter(value.getClass(), buildParameterAlias(key));
-//            Predicate equal = builder.equal(resolvePath(entityRoot, key), val);
-            Predicate predicateLike = builder.like((Expression<String>) resolvePath(entityRoot, key), (Expression<String>) val);
-//            predicates.add(equal);
-            predicates.add(predicateLike);
+            // Handling the cases where the value is a List, Map or a "isNull" condition
+            if (value instanceof List) {
+                Path<?> path = resolvePath(entityRoot, key);
+                CriteriaBuilder.In<Object> inClause = builder.in(path);
+                for (Object v : (List<?>) value) {
+                    inClause.value(v);
+                }
+                predicates.add(inClause);
+            } else if (value instanceof Map) {
+                // For 'BETWEEN' condition
+                Map<String, Object> mapValue = (Map<String, Object>) value;
+                if (mapValue.containsKey("from") && mapValue.containsKey("to")) {
+                    Object from = mapValue.get("from");
+                    Object to = mapValue.get("to");
+
+                    if (from instanceof Comparable && to instanceof Comparable) {
+                        Expression<? extends Comparable<Object>> path =
+                                (Expression<? extends Comparable<Object>>) resolvePath(entityRoot, key);
+
+                        predicates.add(builder.between(path, (Comparable<Object>) from, (Comparable<Object>) to));
+                    }
+                }
+            } else if ("isNull".equals(value)) {
+                // For 'IS NULL' condition
+                predicates.add(builder.isNull(resolvePath(entityRoot, key)));
+            } else if ("isNotNull".equals(value)) {
+                // For 'IS NOT NULL' condition
+                predicates.add(builder.isNotNull(resolvePath(entityRoot, key)));
+            } else if (value instanceof String && ((String) value).contains("%")) {
+                // Treat as LIKE pattern (e.g., "Jo%")
+                predicates.add(
+                        builder.like(
+                                builder.lower((Expression<String>) resolvePath(entityRoot, key)),
+                                ((String) value).toLowerCase()
+                        ));
+            } else {
+                // For '=' condition (default case)
+                predicates.add(builder.equal(resolvePath(entityRoot, key), value));
+            }
         }
         return predicates;
     }
@@ -187,4 +241,5 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
             query.setParameter(buildParameterAlias(entry.getKey()), value + "%");
         }
     }
+
 }

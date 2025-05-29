@@ -9,5 +9,6 @@ public record PharmacyUpdateDTO(
         @NotBlank(message = "Το Όνομα του φαρμακείου δεν μπορει να ειναι κενό")
         @Size(max = 55,message = "Το Όνομα του φαρμακείου πρέπει να ειναι " +
                 "μεχρι 55 χαρακτήρες")
-        String name
+        String name,
+        Long userId
 ) {}

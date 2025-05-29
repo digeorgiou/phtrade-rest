@@ -37,8 +37,7 @@ public class PharmacyServiceImpl implements IPharmacyService{
     }
 
     @Override
-    public PharmacyReadOnlyDTO createPharmacy(PharmacyInsertDTO dto,
-                                              Long creatorUserId) throws EntityAlreadyExistsException, EntityNotFoundException, AppServerException {
+    public PharmacyReadOnlyDTO createPharmacy(PharmacyInsertDTO dto) throws EntityAlreadyExistsException, EntityNotFoundException, AppServerException {
         try {
             JPAHelper.beginTransaction();
 
@@ -47,24 +46,26 @@ public class PharmacyServiceImpl implements IPharmacyService{
                 throw new EntityAlreadyExistsException("Pharmacy", "Name " + dto.name() + " already exists");
             }
             // Get the creator user
-            User creator = userDAO.getByIdWithRelations(creatorUserId,true,
-                            true,true)
+            User creator = userDAO.getById(dto.userId())
                     .orElseThrow(() -> new EntityNotFoundException("User", "Creator not found"));
 
-            // Create and save pharmacy
-            Pharmacy pharmacy = Mapper.mapPharmacyInsertToModel(dto, creator);
-            Pharmacy savedPharmacy = pharmacyDAO.insert(pharmacy)
-                    .orElseThrow(() -> new AppServerException("Pharmacy", "Failed to create pharmacy"));
+            // Create pharmacy entity
+            Pharmacy pharmacy = Mapper.mapPharmacyInsertToModel(dto);
 
             // Add to user's pharmacies
-            creator.addPharmacy(savedPharmacy);
+            creator.addPharmacy(pharmacy);
+            userDAO.update(creator);
+
+            PharmacyReadOnlyDTO pharmacyDTO = pharmacyDAO.insert(pharmacy)
+                    .map(Mapper::mapToPharmacyReadOnlyDTO)
+                    .orElseThrow(() -> new AppServerException("Pharmacy", "Failed to create pharmacy"));
 
             JPAHelper.commitTransaction();
-            LOGGER.info("Pharmacy created with ID: {}", savedPharmacy.getId());
-            return Mapper.mapToPharmacyReadOnlyDTO(savedPharmacy);
+            LOGGER.info("Pharmacy created with ID: {}", pharmacyDTO.id());
+            return pharmacyDTO;
 
 
-        } catch (Exception e) {
+        } catch (EntityNotFoundException | AppServerException | EntityAlreadyExistsException e) {
             JPAHelper.rollbackTransaction();
             LOGGER.error("Error creating pharmacy", e);
             throw e;
@@ -74,19 +75,18 @@ public class PharmacyServiceImpl implements IPharmacyService{
     }
 
     @Override
-    public PharmacyReadOnlyDTO updatePharmacy(PharmacyUpdateDTO dto, Long updaterUserId) throws EntityAlreadyExistsException,
+    public PharmacyReadOnlyDTO updatePharmacy(PharmacyUpdateDTO dto) throws EntityAlreadyExistsException,
             EntityNotAuthorizedException, EntityNotFoundException,
             AppServerException {
         try {
             JPAHelper.beginTransaction();
 
             // Verify pharmacy exists
-            Pharmacy existingPharmacy = pharmacyDAO.getByIdWithRelations(dto.id(),
-                            true,true, true)
+            Pharmacy existingPharmacy = pharmacyDAO.getById(dto.id())
                     .orElseThrow(() -> new EntityNotFoundException("Pharmacy"
                             ,  + dto.id() + "not found"));
 
-            if(!userDAO.isAdmin(updaterUserId) && !(Objects.equals(existingPharmacy.getUser().getId(), updaterUserId))){
+            if(!userDAO.isAdmin(dto.userId()) && !(Objects.equals(existingPharmacy.getUser().getId(), dto.userId()))){
                 throw new EntityNotAuthorizedException("User", "User is not " +
                         "authorized to update Pharmacy with id=" + dto.id());
             }
@@ -98,14 +98,15 @@ public class PharmacyServiceImpl implements IPharmacyService{
 
             // Update pharmacy
             Pharmacy updatedPharmacy = Mapper.mapPharmacyUpdateToModel(dto, existingPharmacy);
-            pharmacyDAO.update(updatedPharmacy);
+            PharmacyReadOnlyDTO readOnlyDTO=
+                    pharmacyDAO.update(updatedPharmacy).map(Mapper::mapToPharmacyReadOnlyDTO).orElseThrow(() -> new AppServerException("Pharmacy", "Failed to update pharmacy"));
 
-            JPAHelper.commitTransaction();
+           JPAHelper.commitTransaction();
             LOGGER.info("Pharmacy {} updated by user {}", dto.id(),
-                    updaterUserId);
-            return Mapper.mapToPharmacyReadOnlyDTO(updatedPharmacy);
+                    dto.userId());
+            return readOnlyDTO;
 
-        } catch (Exception e) {
+        } catch (EntityNotFoundException | EntityNotAuthorizedException | EntityAlreadyExistsException | AppServerException e) {
             JPAHelper.rollbackTransaction();
             LOGGER.error("Error updating pharmacy {}", dto.id() , e);
             throw e;
@@ -115,30 +116,18 @@ public class PharmacyServiceImpl implements IPharmacyService{
     }
 
     @Override
-    public void deletePharmacy(Long id, Long deleterUserId) throws EntityNotFoundException, EntityNotAuthorizedException {
+    public void deletePharmacy(Long id, Long deleterUserId) throws EntityNotFoundException {
 
         try {
             JPAHelper.beginTransaction();
 
-            Pharmacy pharmacy = pharmacyDAO.getByIdWithRelations(id, true,
-                            true, true)
+            Pharmacy pharmacy = pharmacyDAO.getById(id)
                     .orElseThrow(() -> new EntityNotFoundException("Pharmacy", id + " not found"));
 
-            // Check if user owns the pharmacy or is Admin
-            if (!pharmacy.getUser().getId().equals(deleterUserId) && !userDAO.isAdmin(deleterUserId)) {
-                throw new EntityNotAuthorizedException("User", "User not " +
-                        "authorized to delete pharmacy with id=" + id);
+            // Remove pharmacy from user
+            if(pharmacy.getUser()!= null) {
+                pharmacy.getUser().getPharmacies().remove(pharmacy);
             }
-
-            //Removing pharmacy from its user
-            User owner =
-                    userDAO.getByIdWithRelations(pharmacy.getUser().getId(),
-                            true,true, true).orElseThrow(() -> new EntityNotFoundException("User",
-                            "User with id " + pharmacy.getUser().getId() + " " +
-                                    "not found"));
-
-            owner.removePharmacy(pharmacy);
-
             // Remove all contacts first
             if (pharmacy.getContactReferences() != null) {
                 new ArrayList<>(pharmacy.getContactReferences()).forEach(pharmacy::removeContactReference);
@@ -156,7 +145,7 @@ public class PharmacyServiceImpl implements IPharmacyService{
             JPAHelper.commitTransaction();
             LOGGER.info("Pharmacy {} deleted by user {}", id, deleterUserId);
 
-        } catch (Exception e) {
+        } catch (EntityNotFoundException  e) {
             JPAHelper.rollbackTransaction();
             LOGGER.error("Error deleting pharmacy {}", id, e);
             throw e;
@@ -186,10 +175,12 @@ public class PharmacyServiceImpl implements IPharmacyService{
     public PharmacyReadOnlyDTO getPharmacyById(Long id) throws EntityNotFoundException {
         try {
             JPAHelper.beginTransaction();
-            Pharmacy pharmacy = pharmacyDAO.getById(id)
+            PharmacyReadOnlyDTO dto = pharmacyDAO.getById(id)
+                    .map(Mapper::mapToPharmacyReadOnlyDTO)
                     .orElseThrow(() -> new EntityNotFoundException("Pharmacy", id + " not found"));
-            return Mapper.mapToPharmacyReadOnlyDTO(pharmacy);
-        } catch (Exception e) {
+            JPAHelper.commitTransaction();
+            return dto;
+        } catch (EntityNotFoundException e) {
             JPAHelper.rollbackTransaction();
             LOGGER.error("Error fetching pharmacy {}", id, e);
             throw e;
@@ -199,13 +190,15 @@ public class PharmacyServiceImpl implements IPharmacyService{
     }
 
     @Override
-    public PharmacyReadOnlyDTO getPharmacyByName(String name) throws EntityNotFoundException, AppServerException {
+    public PharmacyReadOnlyDTO getPharmacyByName(String name) throws EntityNotFoundException {
         try {
             JPAHelper.beginTransaction();
-            Pharmacy pharmacy = pharmacyDAO.findByField("name", name)
+            PharmacyReadOnlyDTO dto = pharmacyDAO.findByField("name", name)
+                    .map(Mapper::mapToPharmacyReadOnlyDTO)
                     .orElseThrow(() -> new EntityNotFoundException("Pharmacy", "Name " + name + " not found"));
-            return Mapper.mapToPharmacyReadOnlyDTO(pharmacy);
-        } catch (Exception e) {
+            JPAHelper.commitTransaction();
+            return dto;
+        } catch (EntityNotFoundException e) {
             JPAHelper.rollbackTransaction();
             LOGGER.error("Error fetching pharmacy by name {}", name, e);
             throw e;
@@ -218,7 +211,8 @@ public class PharmacyServiceImpl implements IPharmacyService{
     public List<PharmacyReadOnlyDTO> searchPharmaciesByName(String name) throws AppServerException {
         try {
             JPAHelper.beginTransaction();
-            List<Pharmacy> pharmacies = pharmacyDAO.getByCriteria(Map.of("name", name));
+            List<Pharmacy> pharmacies = pharmacyDAO.getByCriteria( Map.of("name", "%" + name + "%"));
+            JPAHelper.commitTransaction();
             return Mapper.pharmaciesToReadOnlyDTOs(pharmacies);
         } catch (Exception e) {
             JPAHelper.rollbackTransaction();
@@ -234,7 +228,8 @@ public class PharmacyServiceImpl implements IPharmacyService{
     public List<PharmacyReadOnlyDTO> searchPharmaciesByUser(String username) throws AppServerException {
             try {
                 JPAHelper.beginTransaction();
-                List<Pharmacy> pharmacies = pharmacyDAO.getByCriteria(Map.of("user.username", username));
+                List<Pharmacy> pharmacies = pharmacyDAO.getByCriteria(Map.of("user.username", username.toLowerCase() + "%"));
+                JPAHelper.commitTransaction();
                 return Mapper.pharmaciesToReadOnlyDTOs(pharmacies);
             } catch (Exception e) {
                 JPAHelper.rollbackTransaction();
@@ -251,6 +246,7 @@ public class PharmacyServiceImpl implements IPharmacyService{
         try {
             JPAHelper.beginTransaction();
             List<Pharmacy> pharmacies = pharmacyDAO.getAll();
+            JPAHelper.commitTransaction();
             return Mapper.pharmaciesToReadOnlyDTOs(pharmacies);
         } catch (Exception e) {
             JPAHelper.rollbackTransaction();

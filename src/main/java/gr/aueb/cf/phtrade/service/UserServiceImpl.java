@@ -66,8 +66,7 @@ public class UserServiceImpl implements IUserService{
         try{
             JPAHelper.beginTransaction();
 
-            User existingUser = userDAO.getByIdWithRelations(dto.id(), true,
-                    true,true).orElseThrow(()-> new EntityNotFoundException("User",
+            User existingUser = userDAO.getById(dto.id()).orElseThrow(()-> new EntityNotFoundException("User",
                     "User with id " + dto.id() + " was not found"));
 
             // Check if new username or email conflicts with other users
@@ -203,7 +202,7 @@ public class UserServiceImpl implements IUserService{
         try{
             JPAHelper.beginTransaction();
 
-            User user = userDAO.getByIdWithRelations(userId, false, true, false)
+            User user = userDAO.getByIdWithRelations(userId, true, false, false)
                     .orElseThrow(() -> new EntityNotFoundException("User", "User with id " + userId + " not found"));
 
             List<Pharmacy> pharmacies = user.getPharmacies() != null ?

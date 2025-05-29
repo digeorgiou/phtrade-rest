@@ -13,15 +13,13 @@ import java.util.List;
 
 public interface IPharmacyService {
 
-    PharmacyReadOnlyDTO createPharmacy(PharmacyInsertDTO dto,
-                                       Long creatorUserId) throws EntityAlreadyExistsException, EntityNotFoundException,AppServerException;
-    PharmacyReadOnlyDTO updatePharmacy(PharmacyUpdateDTO dto,
-                                       Long updaterUserId) throws EntityAlreadyExistsException, EntityNotAuthorizedException,
+    PharmacyReadOnlyDTO createPharmacy(PharmacyInsertDTO dto) throws EntityAlreadyExistsException, EntityNotFoundException,AppServerException;
+    PharmacyReadOnlyDTO updatePharmacy(PharmacyUpdateDTO dto) throws EntityAlreadyExistsException, EntityNotAuthorizedException,
             EntityNotFoundException, AppServerException;
-    void deletePharmacy(Long id, Long deleterUserId) throws EntityNotFoundException, EntityNotAuthorizedException;
+    void deletePharmacy(Long id, Long deleterUserId) throws EntityNotFoundException;
     boolean nameExists(String name) throws AppServerException;
     PharmacyReadOnlyDTO getPharmacyById(Long id) throws EntityNotFoundException;
-    PharmacyReadOnlyDTO getPharmacyByName(String name) throws EntityNotFoundException, AppServerException;
+    PharmacyReadOnlyDTO getPharmacyByName(String name) throws EntityNotFoundException;
     List<PharmacyReadOnlyDTO> searchPharmaciesByName(String name) throws AppServerException;
     List<PharmacyReadOnlyDTO> searchPharmaciesByUser(String username) throws AppServerException;
     List<PharmacyReadOnlyDTO> getAllPharmacies() throws AppServerException;

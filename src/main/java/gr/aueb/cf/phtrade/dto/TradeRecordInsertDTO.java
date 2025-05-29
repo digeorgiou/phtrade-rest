@@ -22,5 +22,7 @@ public record TradeRecordInsertDTO(
 
         Long giverPharmacyId,
 
-        Long receiverPharmacyId
+        Long receiverPharmacyId,
+
+        Long recorderUserid
 ){}

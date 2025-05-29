@@ -14,21 +14,19 @@ import java.util.stream.Collectors;
 public class Mapper {
 
 
-    public static Pharmacy mapPharmacyInsertToModel(PharmacyInsertDTO dto,
-                                                    User user){
+    public static Pharmacy mapPharmacyInsertToModel(PharmacyInsertDTO dto){
 
         return Pharmacy.builder()
                 .name(dto.name())
-                .user(user)
                 .build();
 
     }
 
     public static Pharmacy mapPharmacyUpdateToModel(PharmacyUpdateDTO dto,
                                                     Pharmacy existingPharmacy){
-        existingPharmacy.setName(dto.name());
 
-        return existingPharmacy;
+         existingPharmacy.setName(dto.name());
+         return existingPharmacy;
     }
 
     public static PharmacyReadOnlyDTO mapToPharmacyReadOnlyDTO(Pharmacy pharmacy){
@@ -48,11 +46,9 @@ public class Mapper {
                 .collect(Collectors.toList());
     }
 
-    public static PharmacyContact mapPharmacyContactInsertToModel(ContactInsertDTO dto, User user, Pharmacy pharmacy){
+    public static PharmacyContact mapPharmacyContactInsertToModel(ContactInsertDTO dto){
         return PharmacyContact.builder()
                 .contactName(dto.contactName())
-                .pharmacy(pharmacy)
-                .user(user)
                 .build();
     }
 
@@ -123,30 +119,16 @@ public class Mapper {
 
 
     // Insert DTO → Entity
-    public static TradeRecord mapTradeRecordInsertToModel(TradeRecordInsertDTO dto, Pharmacy giver, Pharmacy receiver, User recorder) {
+    public static TradeRecord mapTradeRecordInsertToModel(TradeRecordInsertDTO dto) {
 
         return TradeRecord.builder()
                 .description(dto.description())
                 .amount(dto.amount())
-                .giver(giver)
-                .receiver(receiver)
-                .recorder(recorder)
-                .lastModifiedBy(recorder)
                 .build();
     }
 
     // Update DTO → Entity
-    public static TradeRecord mapTradeRecordUpdateToModel(TradeRecordUpdateDTO dto, TradeRecord existingTradeRecord,
-                                                          Pharmacy newGiver, Pharmacy newReceiver) {
-
-        Pharmacy oldGiver = existingTradeRecord.getGiver();
-        Pharmacy oldReceiver = existingTradeRecord.getReceiver();
-
-        oldGiver.removeRecordGiver(existingTradeRecord);
-        oldReceiver.removeRecordReceiver(existingTradeRecord);
-
-        newGiver.addRecordGiver(existingTradeRecord);
-        newReceiver.addRecordReceiver(existingTradeRecord);
+    public static TradeRecord mapTradeRecordUpdateToModel(TradeRecordUpdateDTO dto, TradeRecord existingTradeRecord) {
 
         existingTradeRecord.setAmount(dto.amount());
         existingTradeRecord.setDescription(dto.description());
@@ -161,6 +143,8 @@ public class Mapper {
 
         return new TradeRecordReadOnlyDTO(
                 tradeRecord.getId(),
+                tradeRecord.getDescription(),
+                tradeRecord.getAmount(),
                 tradeRecord.getGiver().getName(),
                 tradeRecord.getReceiver().getName(),
                 tradeRecord.getRecorder().getUsername(),
