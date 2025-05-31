@@ -10,6 +10,7 @@ import gr.aueb.cf.phtrade.dto.PharmacyUpdateDTO;
 import gr.aueb.cf.phtrade.model.Pharmacy;
 
 import java.util.List;
+import java.util.Map;
 
 public interface IPharmacyService {
 
@@ -19,6 +20,10 @@ public interface IPharmacyService {
     void deletePharmacy(Long id, Long deleterUserId) throws EntityNotFoundException;
     boolean nameExists(String name) throws AppServerException;
     PharmacyReadOnlyDTO getPharmacyById(Long id) throws EntityNotFoundException;
+    List<PharmacyReadOnlyDTO> getPharmaciesByCriteria(Map<String,Object> criteria);
+    List<PharmacyReadOnlyDTO> getPharmaciesByCriteriaPaginated(Map<String,
+            Object> criteria, Integer page, Integer size);
+    long getPharmaciesCountByCriteria(Map<String, Object> criteria);
     PharmacyReadOnlyDTO getPharmacyByName(String name) throws EntityNotFoundException;
     List<PharmacyReadOnlyDTO> searchPharmaciesByName(String name) throws AppServerException;
     List<PharmacyReadOnlyDTO> searchPharmaciesByUser(String username) throws AppServerException;

@@ -5,5 +5,5 @@ import gr.aueb.cf.phtrade.model.User;
 public record PharmacyFiltersDTO(
 
         String name,
-        User user
+        String username
 ) {}

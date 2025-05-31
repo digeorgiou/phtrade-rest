@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PharmacyServiceImpl implements IPharmacyService{
@@ -184,6 +185,53 @@ public class PharmacyServiceImpl implements IPharmacyService{
             JPAHelper.rollbackTransaction();
             LOGGER.error("Error fetching pharmacy {}", id, e);
             throw e;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public List<PharmacyReadOnlyDTO> getPharmaciesByCriteria(Map<String,
+            Object> criteria) {
+        try {
+            JPAHelper.beginTransaction();
+            List<PharmacyReadOnlyDTO> readOnlyDTOS =
+                    pharmacyDAO.getByCriteria(criteria)
+                            .stream()
+                            .map(Mapper::mapToPharmacyReadOnlyDTO)
+                            .collect(Collectors.toList());
+
+            JPAHelper.commitTransaction();
+            return readOnlyDTOS;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public List<PharmacyReadOnlyDTO> getPharmaciesByCriteriaPaginated(Map<String, Object> criteria, Integer page, Integer size){
+        try{
+            JPAHelper.beginTransaction();
+            List<PharmacyReadOnlyDTO> readOnlyDTOS =
+                    pharmacyDAO.getByCriteriaPaginated(Pharmacy.class,
+                            criteria, page, size)
+                            .stream()
+                            .map(Mapper::mapToPharmacyReadOnlyDTO)
+                            .collect(Collectors.toList());
+            JPAHelper.commitTransaction();
+            return readOnlyDTOS;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public long getPharmaciesCountByCriteria(Map<String, Object> criteria){
+        try{
+            JPAHelper.beginTransaction();
+            long count = pharmacyDAO.getCountByCriteria(criteria);
+            JPAHelper.commitTransaction();
+            return count;
         } finally {
             JPAHelper.closeEntityManager();
         }

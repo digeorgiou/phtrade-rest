@@ -8,7 +8,9 @@ import gr.aueb.cf.phtrade.model.TradeRecord;
 import gr.aueb.cf.phtrade.model.User;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Mapper {
@@ -44,6 +46,22 @@ public class Mapper {
         return pharmacies.stream()
                 .map(Mapper::mapToPharmacyReadOnlyDTO)
                 .collect(Collectors.toList());
+    }
+
+    public static Map<String , Object> mapPharmacyFiltersToCriteria(PharmacyFiltersDTO filtersDTO){
+
+        Map<String,Object> filters = new HashMap<>();
+
+        if(filtersDTO.name() != null && ! filtersDTO.name().isEmpty()){
+            filters.put("name","%" + filtersDTO.name().toLowerCase() + "%");
+        }
+
+        if(filtersDTO.username() != null && !filtersDTO.username().isEmpty()){
+            filters.put("user.username",
+                    "%" + filtersDTO.username().toLowerCase() + "%");
+        }
+
+        return filters;
     }
 
     public static PharmacyContact mapPharmacyContactInsertToModel(ContactInsertDTO dto){
