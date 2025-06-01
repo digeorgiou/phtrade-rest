@@ -35,6 +35,7 @@ public class Mapper {
 
         return new PharmacyReadOnlyDTO(
                 pharmacy.getId(),
+                pharmacy.getName(),
                 pharmacy.getCreatedAt(),
                 pharmacy.getUser().getUsername()
                 );
@@ -48,20 +49,19 @@ public class Mapper {
                 .collect(Collectors.toList());
     }
 
-    public static Map<String , Object> mapPharmacyFiltersToCriteria(PharmacyFiltersDTO filtersDTO){
+    public static Map<String, Object> mapPharmacyFiltersToCriteria(PharmacyFiltersDTO dto) {
+        Map<String, Object> criteria = new HashMap<>();
 
-        Map<String,Object> filters = new HashMap<>();
-
-        if(filtersDTO.name() != null && ! filtersDTO.name().isEmpty()){
-            filters.put("name","%" + filtersDTO.name().toLowerCase() + "%");
+        if (dto.name() != null && !dto.name().isEmpty()) {
+            criteria.put("name", "%" + dto.name().toLowerCase() + "%");
         }
 
-        if(filtersDTO.username() != null && !filtersDTO.username().isEmpty()){
-            filters.put("user.username",
-                    "%" + filtersDTO.username().toLowerCase() + "%");
+        if (dto.username() != null && !dto.username().isEmpty()) {
+            // Keep the dot notation - it will be handled by resolvePath()
+            criteria.put("user.username", "%" + dto.username().toLowerCase() + "%");
         }
 
-        return filters;
+        return criteria;
     }
 
     public static PharmacyContact mapPharmacyContactInsertToModel(ContactInsertDTO dto){

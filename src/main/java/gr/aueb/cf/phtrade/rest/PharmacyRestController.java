@@ -32,19 +32,6 @@ public class PharmacyRestController {
         this.pharmacyService = pharmacyService;
     }
 
-    @GET
-    @Path("/test")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response testEndpoint() {
-        return Response.ok("Test endpoint works!").build();
-    }
-
-    @GET
-    @Path("/cditest")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response testCdi() {
-        return Response.ok("Service injection works: " + (pharmacyService != null)).build();
-    }
 
     @POST
     @Path("")

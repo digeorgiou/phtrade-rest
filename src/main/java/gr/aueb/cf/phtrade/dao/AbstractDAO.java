@@ -69,7 +69,7 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
     @Override
     public long getCountByCriteria(Map<String, Object> criteria) {
         EntityManager em = getEntityManager();
-        CriteriaBuilder builder = getEntityManager().getCriteriaBuilder();
+        CriteriaBuilder builder = em.getCriteriaBuilder();
         CriteriaQuery<Long> countQuery = builder.createQuery(Long.class);
         Root<T> entityRoot = countQuery.from(persistenceClass);
 
@@ -77,10 +77,8 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
         countQuery.select(builder.count(entityRoot))
                 .where(predicates.toArray(new Predicate[0]));
 
-        TypedQuery<Long> query = em.createQuery(countQuery);
-        addParametersToQuery(query, criteria);
 
-        return query
+        return em.createQuery(countQuery)
                 .getSingleResult();
     }
 
@@ -120,10 +118,7 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
         List<Predicate> predicates = getPredicatesList(builder, entityRoot, criteria);
         selectQuery.select(entityRoot).where(predicates.toArray(new Predicate[0]));
 
-        TypedQuery<T> query = em.createQuery(selectQuery);
-        addParametersToQuery(query, criteria);
-
-        return query.getResultList();
+        return em.createQuery(selectQuery).getResultList();
     }
 
     @Override
@@ -139,7 +134,6 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
 
         // Create query and apply pagination
         TypedQuery<T> query = em.createQuery(selectQuery);
-        addParametersToQuery(query, criteria);
 
         if (page != null && size != null) {
             query.setFirstResult(page * size);      // skip
@@ -154,22 +148,6 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
         return JPAHelper.getEntityManager();
     }
 
-//    @SuppressWarnings("unchecked")
-//    protected List<Predicate> getPredicatesList(CriteriaBuilder builder, Root<T> entityRoot, Map<String , Object> criteria) {
-//        List<Predicate> predicates = new ArrayList<>();
-//
-//        for (Map.Entry<String, Object> entry : criteria.entrySet()) {
-//            String key = entry.getKey();
-//            Object value = entry.getValue();
-//
-//            ParameterExpression<?> val = builder.parameter(value.getClass(), buildParameterAlias(key));
-////            Predicate equal = builder.equal(resolvePath(entityRoot, key), val);
-//            Predicate predicateLike = builder.like((Expression<String>) resolvePath(entityRoot, key), (Expression<String>) val);
-////            predicates.add(equal);
-//            predicates.add(predicateLike);
-//        }
-//        return predicates;
-//    }
 
     @SuppressWarnings("unchecked")
     protected List<Predicate> getPredicatesList(CriteriaBuilder builder, Root<T> entityRoot, Map<String, Object> criteria) {
@@ -178,7 +156,6 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
         for (Map.Entry<String, Object> entry : criteria.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-
             // Handling the cases where the value is a List, Map or a "isNull" condition
             if (value instanceof List) {
                 Path<?> path = resolvePath(entityRoot, key);
@@ -207,23 +184,26 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
             } else if ("isNotNull".equals(value)) {
                 // For 'IS NOT NULL' condition
                 predicates.add(builder.isNotNull(resolvePath(entityRoot, key)));
-            } else if (value instanceof String && ((String) value).contains("%")) {
+            } else if (value instanceof String ) {
+                Path<?> path = resolvePath(entityRoot, key);
+                String strValue = (String) value;
+                if(strValue.contains("%")){
                 // Treat as LIKE pattern (e.g., "Jo%")
                 predicates.add(
                         builder.like(
-                                builder.lower((Expression<String>) resolvePath(entityRoot, key)),
-                                ((String) value).toLowerCase()
-                        ));
+                                builder.lower(path.as(String.class)),
+                                strValue.toLowerCase()));
+                }else {
+                    predicates.add(builder.equal(builder.lower(path.as(String.class)),
+                            strValue.toLowerCase()));
+                }
             } else {
+                Path<?> path = resolvePath(entityRoot, key);
                 // For '=' condition (default case)
-                predicates.add(builder.equal(resolvePath(entityRoot, key), value));
+                predicates.add(builder.equal(path,value));
             }
         }
         return predicates;
-    }
-
-    protected String buildParameterAlias(String alias) {
-        return alias.replaceAll("\\.", "");
     }
 
     protected Path<?> resolvePath(Root<T> root, String expression) {
@@ -235,11 +215,9 @@ public class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T>
         return path;
     }
 
-    protected void addParametersToQuery(TypedQuery<?> query, Map<String , Object> criteria) {
-        for (Map.Entry<String , Object> entry : criteria.entrySet()) {
-            Object value = entry.getValue();
-            query.setParameter(buildParameterAlias(entry.getKey()), value + "%");
-        }
+
+    protected String buildParameterAlias(String alias) {
+        return alias.replaceAll("\\.", "");
     }
 
 }
