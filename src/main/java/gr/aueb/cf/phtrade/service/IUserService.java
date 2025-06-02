@@ -15,7 +15,7 @@ public interface IUserService {
     UserReadOnlyDTO getUserByUsername(String username) throws EntityNotFoundException;
     List<PharmacyReadOnlyDTO> getUserPharmacies(Long userId) throws EntityNotFoundException;
     List<ContactReadOnlyDTO> getUserContacts(Long userId) throws EntityNotFoundException;
-    boolean authenticate(UserLoginDTO userLoginDTO) throws AppServerException;
+    boolean isUserValid(String username, String password);
     boolean usernameExists(String username) throws AppServerException;
     boolean emailExists(String email) throws AppServerException;
 }

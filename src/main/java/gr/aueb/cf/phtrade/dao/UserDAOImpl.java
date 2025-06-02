@@ -48,6 +48,11 @@ public class UserDAOImpl extends AbstractDAO<User> implements IUserDAO{
     }
 
     @Override
+    public Optional<User> getByUsername(String username) {
+        return Optional.empty();
+    }
+
+    @Override
     public boolean isUserValid(String username, String password) {
 
         try {

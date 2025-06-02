@@ -4,6 +4,9 @@ import gr.aueb.cf.phtrade.core.enums.RoleType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import javax.security.auth.Subject;
+import java.io.Serializable;
+import java.security.Principal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,7 +18,7 @@ import java.util.Set;
 @Builder
 @Entity
 @Table(name = "users")
-public class User extends AbstractEntity implements IdentifiableEntity{
+public class User implements Principal, IdentifiableEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,7 +27,6 @@ public class User extends AbstractEntity implements IdentifiableEntity{
     @Column(unique = true, nullable = false)
     private String username;
 
-    @Column(nullable = false)
     private String password;
 
     @Column(name = "email", nullable = false)
@@ -42,6 +44,11 @@ public class User extends AbstractEntity implements IdentifiableEntity{
 
     @OneToMany(mappedBy = "user")
     private Set<PharmacyContact> contacts = new HashSet<>();
+
+    @Override
+    public String getName() {
+        return username;
+    }
 
     public void addRecordRecorder(TradeRecord tradeRecord){
         if (recordsRecorder == null) recordsRecorder = new HashSet<>();

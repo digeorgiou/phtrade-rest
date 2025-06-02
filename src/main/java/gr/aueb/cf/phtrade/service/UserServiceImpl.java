@@ -247,16 +247,13 @@ public class UserServiceImpl implements IUserService{
     }
 
     @Override
-    public boolean authenticate(UserLoginDTO userLoginDTO) throws AppServerException {
-        try {
+    public boolean isUserValid(String username, String password) {
+        try{
             JPAHelper.beginTransaction();
-            boolean isValid = userDAO.isUserValid(userLoginDTO.username(), userLoginDTO.password());
+            boolean isValid = userDAO.isUserValid(username, password);
             JPAHelper.commitTransaction();
             return isValid;
-        } catch (Exception e) {
-            JPAHelper.rollbackTransaction();
-            LOGGER.error("Authentication error for username={}", userLoginDTO.username(), e);
-            throw new AppServerException("User", "Authentication error for username " + userLoginDTO.username());
+
         } finally {
             JPAHelper.closeEntityManager();
         }

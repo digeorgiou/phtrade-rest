@@ -136,11 +136,13 @@ public class PharmacyRestController {
                 .entity(readOnlyDTOS)
                 .build();
     }
-
+    @GET
+    @Path("/paginated")
+    @Produces(MediaType.APPLICATION_JSON)
     public PaginatedResult<PharmacyReadOnlyDTO> getFilteredPaginated (@QueryParam("name") @DefaultValue("") String name,
                                                                       @QueryParam("username")@DefaultValue("") String username,
-                                                                      @QueryParam("page")@DefaultValue("") Integer page,
-                                                                      @QueryParam("size")@DefaultValue("") Integer size)
+                                                                      @QueryParam("page")@DefaultValue("0") Integer page,
+                                                                      @QueryParam("size")@DefaultValue("10") Integer size)
     throws EntityInvalidArgumentException{
 
         PharmacyFiltersDTO filtersDTO = new PharmacyFiltersDTO(name, username);
