@@ -10,11 +10,11 @@ public record UserUpdateDTO(
         @Size(min = 4, max = 55,
                 message = "Το username πρέπει να έχει 4 ως 55 χαρακτήρες")
         String username,
-        @NotBlank(message = "Παρακαλώ εισάγεται κωδικό")
+        @NotBlank(message = "Παρακαλώ εισάγετε κωδικό")
         @Size(min = 4, max = 30,
                 message = "Ο κωδικός πρέπει να έχει 4 ως 30 χαρακτήρες")
         String password,
-        @NotBlank(message = "Παρακαλώ εισάγεται κωδικό")
+        @NotBlank(message = "Παρακαλώ εισάγετε κωδικό")
         @Size(min = 4, max = 30,
                 message = "Ο κωδικός πρέπει να έχει 4 ως 30 χαρακτήρες")
         String confirmedPassword,

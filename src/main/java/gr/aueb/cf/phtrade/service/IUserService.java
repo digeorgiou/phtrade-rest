@@ -4,6 +4,7 @@ import gr.aueb.cf.phtrade.core.exceptions.*;
 import gr.aueb.cf.phtrade.dto.*;
 
 import java.util.List;
+import java.util.Map;
 
 public interface IUserService {
 
@@ -18,4 +19,12 @@ public interface IUserService {
     boolean isUserValid(String username, String password);
     boolean usernameExists(String username) throws AppServerException;
     boolean emailExists(String email) throws AppServerException;
+    List<UserReadOnlyDTO> getUsersByCriteria(Map<String,
+            Object> criteria);
+    List<UserReadOnlyDTO> getUsersByCriteriaPaginated
+            (Map<String, Object> criteria, Integer page, Integer size);
+    long getUsersCountByCriteria(Map<String, Object> criteria);
+
+
+
 }

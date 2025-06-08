@@ -18,7 +18,7 @@ import java.util.Set;
 @Builder
 @Entity
 @Table(name = "users")
-public class User implements Principal, IdentifiableEntity{
+public class User extends AbstractEntity implements Principal, IdentifiableEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

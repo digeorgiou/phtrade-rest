@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -286,6 +287,54 @@ public class UserServiceImpl implements IUserService{
             JPAHelper.rollbackTransaction();
             LOGGER.error("Error checking email existence for email={}", email, e);
             throw new AppServerException("User", "Error checking email existence");
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public List<UserReadOnlyDTO> getUsersByCriteria(Map<String,
+            Object> criteria) {
+        try {
+            JPAHelper.beginTransaction();
+            List<UserReadOnlyDTO> readOnlyDTOS =
+                    userDAO.getByCriteria(criteria)
+                            .stream()
+                            .map(Mapper::mapToUserReadOnlyDTO)
+                            .collect(Collectors.toList());
+
+            JPAHelper.commitTransaction();
+            return readOnlyDTOS;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public List<UserReadOnlyDTO> getUsersByCriteriaPaginated
+            (Map<String, Object> criteria, Integer page, Integer size){
+        try{
+            JPAHelper.beginTransaction();
+            List<UserReadOnlyDTO> readOnlyDTOS =
+                    userDAO.getByCriteriaPaginated(User.class,
+                                    criteria, page, size)
+                            .stream()
+                            .map(Mapper::mapToUserReadOnlyDTO)
+                            .collect(Collectors.toList());
+            JPAHelper.commitTransaction();
+            return readOnlyDTOS;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public long getUsersCountByCriteria(Map<String, Object> criteria){
+        try{
+            JPAHelper.beginTransaction();
+            long count = userDAO.getCountByCriteria(criteria);
+            JPAHelper.commitTransaction();
+            return count;
         } finally {
             JPAHelper.closeEntityManager();
         }

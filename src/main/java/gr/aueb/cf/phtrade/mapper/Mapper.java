@@ -64,6 +64,20 @@ public class Mapper {
         return criteria;
     }
 
+    public static Map<String, Object> mapUserFiltersToCriteria(UserFiltersDTO dto){
+        Map<String, Object> criteria = new HashMap<>();
+
+        if (dto.username() != null && !dto.username().isEmpty()) {
+            criteria.put("username", "%" + dto.username().toLowerCase() + "%");
+        }
+
+        if (dto.email() != null && !dto.email().isEmpty()) {
+            // Keep the dot notation - it will be handled by resolvePath()
+            criteria.put("email", "%" + dto.email().toLowerCase() + "%");
+        }
+        return criteria;
+    }
+
     public static PharmacyContact mapPharmacyContactInsertToModel(ContactInsertDTO dto){
         return PharmacyContact.builder()
                 .contactName(dto.contactName())
