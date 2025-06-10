@@ -8,6 +8,7 @@ import gr.aueb.cf.phtrade.dto.ContactReadOnlyDTO;
 import gr.aueb.cf.phtrade.dto.ContactUpdateDTO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface IPharmacyContactService {
 
@@ -16,4 +17,7 @@ public interface IPharmacyContactService {
     void deleteContact(Long contactId) throws EntityNotFoundException, AppServerException ;
     ContactReadOnlyDTO findById(Long contactId) throws EntityNotFoundException, AppServerException;
     boolean contactExists(Long userId, Long pharmacyId) throws AppServerException;
+    List<ContactReadOnlyDTO> getContactsByCriteria(Map<String,Object> criteria);
+    List<ContactReadOnlyDTO> getContactsByCriteriaPaginated(Map<String,
+            Object> criteria, Integer page, Integer size);
 }

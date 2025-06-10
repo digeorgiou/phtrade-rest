@@ -4,6 +4,7 @@ import gr.aueb.cf.phtrade.core.exceptions.AppServerException;
 import gr.aueb.cf.phtrade.core.exceptions.EntityAlreadyExistsException;
 import gr.aueb.cf.phtrade.core.exceptions.EntityNotAuthorizedException;
 import gr.aueb.cf.phtrade.core.exceptions.EntityNotFoundException;
+import gr.aueb.cf.phtrade.dto.BalanceDTO;
 import gr.aueb.cf.phtrade.dto.PharmacyInsertDTO;
 import gr.aueb.cf.phtrade.dto.PharmacyReadOnlyDTO;
 import gr.aueb.cf.phtrade.dto.PharmacyUpdateDTO;
@@ -28,4 +29,5 @@ public interface IPharmacyService {
     List<PharmacyReadOnlyDTO> searchPharmaciesByName(String name) throws AppServerException;
     List<PharmacyReadOnlyDTO> searchPharmaciesByUser(String username) throws AppServerException;
     List<PharmacyReadOnlyDTO> getAllPharmacies() throws AppServerException;
+    List<BalanceDTO> getBalanceList(Long pharmacyId) throws EntityNotFoundException;
 }

@@ -64,6 +64,16 @@ public class Mapper {
         return criteria;
     }
 
+    public static Map<String, Object> mapContactFiltersToCriteria(ContactFiltersDTO dto){
+        Map<String, Object> criteria = new HashMap<>();
+
+        if(dto.name() != null && !dto.name().isEmpty()){
+            criteria.put("name", "%" + dto.name().toLowerCase() + "%");
+        }
+
+        return criteria;
+    }
+
     public static Map<String, Object> mapUserFiltersToCriteria(UserFiltersDTO dto){
         Map<String, Object> criteria = new HashMap<>();
 

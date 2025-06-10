@@ -4,13 +4,14 @@ import gr.aueb.cf.phtrade.core.exceptions.AppServerException;
 import gr.aueb.cf.phtrade.core.exceptions.EntityAlreadyExistsException;
 import gr.aueb.cf.phtrade.core.exceptions.EntityNotAuthorizedException;
 import gr.aueb.cf.phtrade.core.exceptions.EntityNotFoundException;
+import gr.aueb.cf.phtrade.dao.IPharmacyContactDAO;
 import gr.aueb.cf.phtrade.dao.IPharmacyDAO;
+import gr.aueb.cf.phtrade.dao.ITradeRecordDAO;
 import gr.aueb.cf.phtrade.dao.IUserDAO;
-import gr.aueb.cf.phtrade.dto.PharmacyInsertDTO;
-import gr.aueb.cf.phtrade.dto.PharmacyReadOnlyDTO;
-import gr.aueb.cf.phtrade.dto.PharmacyUpdateDTO;
+import gr.aueb.cf.phtrade.dto.*;
 import gr.aueb.cf.phtrade.mapper.Mapper;
 import gr.aueb.cf.phtrade.model.Pharmacy;
+import gr.aueb.cf.phtrade.model.PharmacyContact;
 import gr.aueb.cf.phtrade.model.User;
 import gr.aueb.cf.phtrade.service.util.JPAHelper;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -18,10 +19,7 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -30,11 +28,15 @@ public class PharmacyServiceImpl implements IPharmacyService{
     private static final Logger LOGGER = LoggerFactory.getLogger(PharmacyServiceImpl.class);
     private final IPharmacyDAO pharmacyDAO;
     private final IUserDAO userDAO;
+    private final ITradeRecordService tradeRecordService;
+
 
     @Inject
-    public PharmacyServiceImpl(IPharmacyDAO pharmacyDAO, IUserDAO userDAO) {
+    public PharmacyServiceImpl(IPharmacyDAO pharmacyDAO, IUserDAO userDAO,
+                               ITradeRecordService tradeRecordService) {
         this.pharmacyDAO = pharmacyDAO;
         this.userDAO = userDAO;
+        this.tradeRecordService = tradeRecordService;
     }
 
     @Override
@@ -306,4 +308,54 @@ public class PharmacyServiceImpl implements IPharmacyService{
         }
     }
 
+    @Override
+    public List<BalanceDTO> getBalanceList(Long pharmacyId) throws  EntityNotFoundException {
+        try {
+
+            List<BalanceDTO> balanceList = new ArrayList<>();
+
+            Pharmacy selectedPharmacy = pharmacyDAO.getById(pharmacyId)
+                    .orElseThrow(()-> new EntityNotFoundException("Pharmacy",
+                            "Pharmacy not found"));
+
+            User pharmacyUser = selectedPharmacy.getUser();
+            Set<PharmacyContact> contacts = pharmacyUser.getContacts();
+
+            for(PharmacyContact contact : contacts){
+                Pharmacy contactPharmacy = contact.getPharmacy();
+                if(contactPharmacy == null) continue;
+
+                double balance =
+                        tradeRecordService.calculateBalanceBetweenPharmacies
+                                (selectedPharmacy.getId(), contactPharmacy.getId());
+
+                Integer tradeCount = tradeRecordService.getTradeCountBetweenPharmacies(
+                        selectedPharmacy.getId(), contactPharmacy.getId()
+                );
+
+                List<TradeRecordReadOnlyDTO> recentTrades =
+                        tradeRecordService.getRecentTradesBetweenPharmacies(selectedPharmacy.getId(), contactPharmacy.getId(), 5);
+
+                balanceList.add(
+                        new BalanceDTO(
+                                contact.getContactName() != null?
+                                        contact.getContactName() : "Contact",
+                                contactPharmacy.getName() != null?
+                                        contactPharmacy.getName() : "Pharmacy",
+                                balance,
+                                recentTrades,
+                                tradeCount
+                        )
+                );
+            }
+            return balanceList;
+
+        } catch (EntityNotFoundException e) {
+            JPAHelper.rollbackTransaction();
+            LOGGER.error("Error fetching balance list", e);
+            throw e;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
 }

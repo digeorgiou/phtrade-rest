@@ -20,6 +20,10 @@ import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 @ApplicationScoped
 public class PharmacyContactServiceImpl implements IPharmacyContactService {
@@ -175,5 +179,27 @@ public class PharmacyContactServiceImpl implements IPharmacyContactService {
         } finally {
             JPAHelper.closeEntityManager();
         }
+    }
+
+    @Override
+    public List<ContactReadOnlyDTO> getContactsByCriteria(Map<String, Object> criteria) {
+        try{
+            JPAHelper.beginTransaction();
+            List<ContactReadOnlyDTO> readOnlyDTOS =
+                    contactDAO.getByCriteria(criteria)
+                            .stream()
+                            .map(Mapper::mapToPharmacyContactReadOnlyDTO)
+                            .collect(Collectors.toList());
+
+            JPAHelper.commitTransaction();
+            return readOnlyDTOS;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public List<ContactReadOnlyDTO> getContactsByCriteriaPaginated(Map<String, Object> criteria, Integer page, Integer size) {
+        return List.of();
     }
 }

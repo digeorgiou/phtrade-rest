@@ -6,8 +6,7 @@ public record BalanceDTO (
 
         String contactName,
         String pharmacyName,
-        Long pharmacyId,
-        double amount,
+        double balance,
         List<TradeRecordReadOnlyDTO> recentTrades,
         Integer tradeCount
 )

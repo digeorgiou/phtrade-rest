@@ -121,15 +121,15 @@ public class ContactRestController {
     @GET
     @Path("/filtered")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getFiltered(@QueryParam("name") @DefaultValue("") String name,
-                                @QueryParam("username")@DefaultValue("") String username){
+    public Response getFiltered(@QueryParam("name") @DefaultValue("") String name){
 
-        PharmacyFiltersDTO filtersDTO = new PharmacyFiltersDTO(name, username);
+        ContactFiltersDTO filtersDTO = new ContactFiltersDTO(name);
         Map<String, Object> criteria =
-                Mapper.mapPharmacyFiltersToCriteria(filtersDTO);
+                Mapper.mapContactFiltersToCriteria(filtersDTO);
 
-        List<PharmacyReadOnlyDTO> readOnlyDTOS =
-                pharmacyService.getPharmaciesByCriteria(criteria);
+        List<ContactReadOnlyDTO> readOnlyDTOS =
+                contactService.
+
         return Response.status(Response.Status.OK)
                 .entity(readOnlyDTOS)
                 .build();
