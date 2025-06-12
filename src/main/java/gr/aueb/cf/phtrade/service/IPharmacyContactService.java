@@ -20,4 +20,5 @@ public interface IPharmacyContactService {
     List<ContactReadOnlyDTO> getContactsByCriteria(Map<String,Object> criteria);
     List<ContactReadOnlyDTO> getContactsByCriteriaPaginated(Map<String,
             Object> criteria, Integer page, Integer size);
+    long getContactsCountByCriteria(Map<String, Object> criteria);
 }

@@ -29,5 +29,5 @@ public interface IPharmacyService {
     List<PharmacyReadOnlyDTO> searchPharmaciesByName(String name) throws AppServerException;
     List<PharmacyReadOnlyDTO> searchPharmaciesByUser(String username) throws AppServerException;
     List<PharmacyReadOnlyDTO> getAllPharmacies() throws AppServerException;
-    List<BalanceDTO> getBalanceList(Long pharmacyId) throws EntityNotFoundException;
+    List<BalanceDTO> getBalanceList(Long pharmacyId, String sortBy) throws EntityNotFoundException;
 }

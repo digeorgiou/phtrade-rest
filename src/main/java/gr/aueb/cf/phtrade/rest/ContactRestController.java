@@ -128,7 +128,7 @@ public class ContactRestController {
                 Mapper.mapContactFiltersToCriteria(filtersDTO);
 
         List<ContactReadOnlyDTO> readOnlyDTOS =
-                contactService.
+                contactService.getContactsByCriteria(criteria);
 
         return Response.status(Response.Status.OK)
                 .entity(readOnlyDTOS)
@@ -137,16 +137,15 @@ public class ContactRestController {
     @GET
     @Path("/paginated")
     @Produces(MediaType.APPLICATION_JSON)
-    public PaginatedResult<PharmacyReadOnlyDTO> getFilteredPaginated (@QueryParam("name") @DefaultValue("") String name,
-                                                                      @QueryParam("username")@DefaultValue("") String username,
+    public PaginatedResult<ContactReadOnlyDTO> getFilteredPaginated (@QueryParam("name") @DefaultValue("") String name,
                                                                       @QueryParam("page")@DefaultValue("0") Integer page,
                                                                       @QueryParam("size")@DefaultValue("10") Integer size)
             throws EntityInvalidArgumentException{
 
-        PharmacyFiltersDTO filtersDTO = new PharmacyFiltersDTO(name, username);
+        ContactFiltersDTO filtersDTO = new ContactFiltersDTO(name);
         Map<String, Object> criteria;
 
-        criteria = Mapper.mapPharmacyFiltersToCriteria(filtersDTO);
+        criteria = Mapper.mapContactFiltersToCriteria(filtersDTO);
 
         if(page < 0) throw new EntityInvalidArgumentException(
                 "PageInvalidNumber","Invalid page number");
@@ -154,11 +153,11 @@ public class ContactRestController {
                 "SizeInvalidNumber", "Invalid size number"
         );
 
-        List<PharmacyReadOnlyDTO> readOnlyDTOS =
-                pharmacyService.getPharmaciesByCriteriaPaginated(criteria, page, size);
+        List<ContactReadOnlyDTO> readOnlyDTOS =
+                contactService.getContactsByCriteriaPaginated(criteria, page, size);
 
         long totalItems =
-                pharmacyService.getPharmaciesCountByCriteria(criteria);
+                contactService.getContactsCountByCriteria(criteria);
 
         int totalPages = (int) Math.ceil((double) totalItems / size);
 

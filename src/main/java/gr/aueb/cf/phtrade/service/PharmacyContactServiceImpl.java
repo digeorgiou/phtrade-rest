@@ -200,6 +200,31 @@ public class PharmacyContactServiceImpl implements IPharmacyContactService {
 
     @Override
     public List<ContactReadOnlyDTO> getContactsByCriteriaPaginated(Map<String, Object> criteria, Integer page, Integer size) {
-        return List.of();
+        try{
+            JPAHelper.beginTransaction();
+            List<ContactReadOnlyDTO> readOnlyDTOS =
+                    contactDAO.getByCriteriaPaginated(PharmacyContact.class,
+                            criteria, page, size)
+                            .stream()
+                            .map(Mapper::mapToPharmacyContactReadOnlyDTO)
+                            .collect(Collectors.toList());
+
+            JPAHelper.commitTransaction();
+            return readOnlyDTOS;
+        } finally{
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public long getContactsCountByCriteria(Map<String, Object> criteria) {
+        try{
+            JPAHelper.beginTransaction();
+            long count = contactDAO.getCountByCriteria(criteria);
+            JPAHelper.commitTransaction();
+            return count;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
     }
 }

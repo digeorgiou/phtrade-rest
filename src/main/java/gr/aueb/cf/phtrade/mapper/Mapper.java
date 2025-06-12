@@ -88,6 +88,16 @@ public class Mapper {
         return criteria;
     }
 
+    public static Map<String, Object> mapRecordFiltersToCriteria(TradeRecordFiltersDTO dto){
+        Map<String, Object> criteria = new HashMap<>();
+
+        if(dto.description() != null && !dto.description().isEmpty()){
+            criteria.put("description",
+                    "%" + dto.description().toLowerCase() + "%");
+        }
+        return criteria;
+    }
+
     public static PharmacyContact mapPharmacyContactInsertToModel(ContactInsertDTO dto){
         return PharmacyContact.builder()
                 .contactName(dto.contactName())
@@ -166,6 +176,7 @@ public class Mapper {
         return TradeRecord.builder()
                 .description(dto.description())
                 .amount(dto.amount())
+                .transactionDate(dto.transactionDate())
                 .build();
     }
 
@@ -191,7 +202,9 @@ public class Mapper {
                 tradeRecord.getReceiver().getName(),
                 tradeRecord.getRecorder().getUsername(),
                 tradeRecord.getLastModifiedBy().getUsername(),
-                tradeRecord.getTransactionDate()
+                tradeRecord.getTransactionDate(),
+                tradeRecord.isDeletedByGiver(),
+                tradeRecord.isDeletedByReceiver()
         );
     }
 

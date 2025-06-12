@@ -6,9 +6,5 @@ import gr.aueb.cf.phtrade.model.User;
 
 public record TradeRecordFiltersDTO(
 
-        Pharmacy pharmacy,
-        User user,
-        PharmacyContact contact,
-        String description,
-        Double amount
+        String description
 ){}

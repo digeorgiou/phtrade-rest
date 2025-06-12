@@ -172,4 +172,18 @@ public class PharmacyRestController {
             totalItems
         );
     }
+    @GET
+    @Path("/balance/{pharmacyId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getBalanceList(@PathParam("pharmacyId") Long pharmacyId,
+                                   @QueryParam("sort") @DefaultValue("") String sortBy) throws EntityNotFoundException{
+
+        List<BalanceDTO> balanceList =
+                pharmacyService.getBalanceList(pharmacyId, sortBy);
+
+        return Response.status(Response.Status.OK)
+                .entity(balanceList)
+                .build();
+    }
+
 }

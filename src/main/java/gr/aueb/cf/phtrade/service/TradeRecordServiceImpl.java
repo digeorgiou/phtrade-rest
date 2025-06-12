@@ -14,6 +14,7 @@ import gr.aueb.cf.phtrade.model.Pharmacy;
 import gr.aueb.cf.phtrade.model.TradeRecord;
 import gr.aueb.cf.phtrade.model.User;
 import gr.aueb.cf.phtrade.service.util.JPAHelper;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+@ApplicationScoped
 public class TradeRecordServiceImpl implements ITradeRecordService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TradeRecordServiceImpl.class);
@@ -45,8 +48,9 @@ public class TradeRecordServiceImpl implements ITradeRecordService {
         try{
             JPAHelper.beginTransaction();
 
-            User recorderUser = userDAO.getById(dto.recorderUserid()).orElseThrow(()-> new EntityNotFoundException("User",
-                    "User with id " + dto.recorderUserid() + " was not found"));
+            User recorderUser =
+                    userDAO.getById(dto.recorderUserId()).orElseThrow(()-> new EntityNotFoundException("User",
+                    "User with id " + dto.recorderUserId() + " was not found"));
 
             Pharmacy giver = pharmacyDAO.getById(dto.giverPharmacyId()).orElseThrow(()-> new EntityNotFoundException("Pharmacy",
                     "Pharmacy with id " + dto.giverPharmacyId() + " was not " +
@@ -57,13 +61,13 @@ public class TradeRecordServiceImpl implements ITradeRecordService {
                             "found"));
 
             boolean isGiverUser =
-                    giver.getUser() != null && giver.getUser().getId().equals(dto.recorderUserid());
+                    giver.getUser() != null && giver.getUser().getId().equals(dto.recorderUserId());
             boolean isReceiverUser =
-                    receiver.getUser() != null && receiver.getUser().getId().equals(dto.recorderUserid());
+                    receiver.getUser() != null && receiver.getUser().getId().equals(dto.recorderUserId());
 
-            if(!userDAO.isAdmin(dto.recorderUserid()) && !isGiverUser && !isReceiverUser){
+            if(!userDAO.isAdmin(dto.recorderUserId()) && !isGiverUser && !isReceiverUser){
                 throw new EntityNotAuthorizedException("User", "User with " +
-                        "id=" + dto.recorderUserid() + "not authorized to " +
+                        "id=" + dto.recorderUserId() + "not authorized to " +
                         "create this trade record");
             }
 
@@ -72,6 +76,7 @@ public class TradeRecordServiceImpl implements ITradeRecordService {
             giver.addRecordGiver(record);
             receiver.addRecordReceiver(record);
             recorderUser.addRecordRecorder(record);
+            record.setLastModifiedBy(recorderUser);
 
             pharmacyDAO.update(giver);
             pharmacyDAO.update(receiver);
@@ -150,7 +155,7 @@ public class TradeRecordServiceImpl implements ITradeRecordService {
     }
 
     @Override
-    public void delete(Long id, Long deleterUserId, Boolean isGiverSide) throws EntityNotFoundException, EntityNotAuthorizedException{
+    public void delete(Long id, Long deleterUserId) throws EntityNotFoundException, EntityNotAuthorizedException{
         try{
             JPAHelper.beginTransaction();
             TradeRecord record = tradeRecordDAO.getById(id).orElseThrow(()-> new EntityNotFoundException("TradeRecord",
@@ -160,22 +165,20 @@ public class TradeRecordServiceImpl implements ITradeRecordService {
             User deleterUser = userDAO.getById(deleterUserId).orElseThrow(()-> new EntityNotFoundException("User",
                     "User with id " + deleterUserId + " was not found"));
 
-            // Verify updater is giver, receiver, or admin
-            boolean isAdmin = userDAO.isAdmin(deleterUserId);
+            // Verify deleter is giver or receiver
             boolean isGiverUser = record.getGiver().getUser() != null &&
                     record.getGiver().getUser().getId().equals(deleterUserId);
             boolean isReceiverUser =
                     record.getReceiver().getUser() != null &&
                             record.getReceiver().getUser().getId().equals(deleterUserId);
 
-            if (!isAdmin && !isGiverUser && !isReceiverUser) {
+            if (!isGiverUser && !isReceiverUser) {
                 throw new EntityNotAuthorizedException("User", "Only giver, " +
-                        "receiver,  or admin can " +
-                        "delete records");
+                        "or receiver can delete records");
             }
 
             // Two-phase deletion logic
-            if (isGiverSide) {
+            if (isGiverUser) {
                 record.setDeletedByGiver(true);
             } else {
                 record.setDeletedByReceiver(true);
@@ -480,5 +483,51 @@ public class TradeRecordServiceImpl implements ITradeRecordService {
             JPAHelper.closeEntityManager();
         }
 
+    }
+
+    @Override
+    public List<TradeRecordReadOnlyDTO> getTradeRecordsByCriteria(Map<String, Object> criteria) {
+        try{
+            JPAHelper.beginTransaction();
+            List<TradeRecordReadOnlyDTO> readOnlyDTOS =
+                    tradeRecordDAO.getByCriteria(criteria)
+                            .stream()
+                            .map(Mapper::mapToTradeRecordReadOnlyDTO)
+                            .collect(Collectors.toList());
+            JPAHelper.commitTransaction();
+            return readOnlyDTOS;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+
+    }
+
+    @Override
+    public List<TradeRecordReadOnlyDTO> getTradeRecordsByCriteriaPaginated(Map<String, Object> criteria, Integer page, Integer size) {
+        try{
+            JPAHelper.beginTransaction();
+            List<TradeRecordReadOnlyDTO> readOnlyDTOS =
+                    tradeRecordDAO.getByCriteriaPaginated(TradeRecord.class,
+                            criteria, page, size)
+                            .stream()
+                            .map(Mapper::mapToTradeRecordReadOnlyDTO)
+                            .collect(Collectors.toList());
+            JPAHelper.commitTransaction();
+            return readOnlyDTOS;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
+    }
+
+    @Override
+    public long getTradeRecordsCountByCriteria(Map<String, Object> criteria) {
+        try{
+            JPAHelper.beginTransaction();
+            long count = tradeRecordDAO.getCountByCriteria(criteria);
+            JPAHelper.commitTransaction();
+            return count;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
     }
 }

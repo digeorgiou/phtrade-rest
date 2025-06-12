@@ -11,12 +11,12 @@ public record TradeRecordInsertDTO(
         String description,
 
         @Positive(message = "Το ποσό πρέπει να είναι θετικός αριθμός")
-        @NotBlank(message = "Το ποσό δεν μπορεί να είναι κενό")
-        @Size(max = 10 ,
-                message = "Το ποσό πρέπει να έχει μέχρι 10 χαρακτήρες")
+        @NotNull(message = "Το ποσό δεν μπορεί να είναι κενό")
+        @Max(value = 100000,
+                message = "Το ποσό πρέπει να έχει μέχρι 100.000")
         Double amount,
 
-        @NotBlank(message = "Η ημερόμηνία δεν μπορεί να είναι κενή")
+        @NotNull(message = "Η ημερόμηνία δεν μπορεί να είναι κενή")
         @Past(message = "Η ημερομηνία δεν μπορεί να είναι μελλοντική")
         LocalDateTime transactionDate,
 
@@ -24,5 +24,5 @@ public record TradeRecordInsertDTO(
 
         Long receiverPharmacyId,
 
-        Long recorderUserid
+        Long recorderUserId
 ){}

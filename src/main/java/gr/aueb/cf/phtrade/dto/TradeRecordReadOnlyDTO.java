@@ -1,5 +1,7 @@
 package gr.aueb.cf.phtrade.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.LocalDateTime;
 
 public record TradeRecordReadOnlyDTO(
@@ -11,5 +13,8 @@ public record TradeRecordReadOnlyDTO(
         String receiverName,
         String recorderUsername,
         String lastModifiedByUsername,
-        LocalDateTime transactionDate
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        LocalDateTime transactionDate,
+        Boolean deletedByGiver,
+        Boolean deletedByReceiver
 ) {}

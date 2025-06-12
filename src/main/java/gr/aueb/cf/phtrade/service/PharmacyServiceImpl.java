@@ -309,7 +309,7 @@ public class PharmacyServiceImpl implements IPharmacyService{
     }
 
     @Override
-    public List<BalanceDTO> getBalanceList(Long pharmacyId) throws  EntityNotFoundException {
+    public List<BalanceDTO> getBalanceList(Long pharmacyId, String sortBy) throws  EntityNotFoundException {
         try {
 
             List<BalanceDTO> balanceList = new ArrayList<>();
@@ -348,7 +348,7 @@ public class PharmacyServiceImpl implements IPharmacyService{
                         )
                 );
             }
-            return balanceList;
+            return sortBalanceList(balanceList, sortBy);
 
         } catch (EntityNotFoundException e) {
             JPAHelper.rollbackTransaction();
@@ -357,5 +357,32 @@ public class PharmacyServiceImpl implements IPharmacyService{
         } finally {
             JPAHelper.closeEntityManager();
         }
+    }
+
+    private List<BalanceDTO> sortBalanceList(List<BalanceDTO> balanceList,
+                                             String sortBy){
+
+        if(sortBy == null || sortBy.isEmpty()){
+            return balanceList; // Return unsorted if no sorting specified
+        }
+
+        boolean ascending = !sortBy.startsWith("-");
+        String sortField = ascending ? sortBy : sortBy.substring(1);
+
+        Comparator<BalanceDTO> comparator = switch (sortField.toLowerCase()){
+            case "contactname" -> Comparator.comparing(BalanceDTO::contactName,String.CASE_INSENSITIVE_ORDER);
+            case "tradecount" -> Comparator.comparing(BalanceDTO::tradeCount);
+            case "balance" -> Comparator.comparingDouble(BalanceDTO::balance);
+            default -> (a,b) -> 0; //No sorting if field is invalid
+        };
+
+        // Reverse for descending order
+        if (!ascending) {
+            comparator = comparator.reversed();
+        }
+
+        return balanceList.stream()
+                .sorted(comparator)
+                .collect(Collectors.toList());
     }
 }
